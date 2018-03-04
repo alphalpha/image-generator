@@ -5,6 +5,7 @@ extern crate rusttype;
 use std::path::{Path, PathBuf};
 use std::env;
 use std::{fs, io};
+use std::io::{Error, ErrorKind};
 use imageproc::drawing::{draw_text_mut, draw_hollow_rect_mut};
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
@@ -37,6 +38,23 @@ fn image_paths(dir : &str) -> Result<Vec<PathBuf>, io::Error> {
         .filter(|f| f.extension().is_some())
         .collect();
     Ok(paths)
+}
+
+fn citing(name : &str) -> Result<String, std::io::Error> {
+    let mut parts : Vec<&str> = name.splitn(5, '_').collect();
+    match parts.len() {
+        5 => {
+            let parts = parts.split_off(2);
+            let (year, rest) = parts[1].split_at(4);
+            let (month, day) = rest.split_at(2);
+            let date = day.to_string() + "." + month + "." + year;
+            let (hour, rest) = parts[2].split_at(2);
+            let (minutes, seconds) = rest.split_at(2);
+            let time = hour.to_string() + ":" + minutes + ":" + seconds;
+            Ok(String::from(parts[0].to_string() + ", " + &date + ", " + &time))
+        },
+        _ => Err(Error::new(ErrorKind::Other, String::from("File: \"".to_string() + name + "\" has wrong name format"))),
+    }
 }
 
 fn main() {
@@ -74,8 +92,12 @@ fn main() {
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() { *p = color; }
 
-        let text = in_path.file_stem().unwrap().to_str().unwrap();
-        draw_text_mut(&mut image, Rgb([255u8, 255u8, 255u8]), 10, 10, scale, &font, text);
+        let text = match citing(in_path.file_stem().unwrap().to_str().unwrap()) {
+            Ok(c) => c,
+            Err(e) => panic!("{}", e),
+        };
+
+        draw_text_mut(&mut image, Rgb([255u8, 255u8, 255u8]), 10, 10, scale, &font, text.as_str());
 
         //draw_hollow_rect_mut(&mut image, rect, Rgb([255u8, 255u8, 255u8]));
 
