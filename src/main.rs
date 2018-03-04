@@ -57,6 +57,13 @@ fn citing(name : &str) -> Result<String, std::io::Error> {
     }
 }
 
+fn output_file_path(target_dir : &Path, source_file : &Path) -> Result<PathBuf, Error> {
+    let mut stem = source_file.file_stem().unwrap().to_os_string();
+    stem.push("_green");
+    Ok(target_dir.join(stem).with_extension(source_file.extension().unwrap()))
+    //None => Err(Error::new(ErrorKind::Other, "Problem"),
+}
+
 fn main() {
     if env::args().count() != 3 {
         panic!("Please enter a target file path")
@@ -81,14 +88,9 @@ fn main() {
     let in_paths = image_paths(&args[1]).expect("Could not read files in directory");
 
     for in_path in in_paths.iter() {
-        let file_name = out_path.to_str().unwrap().to_string()
-            + "/"
-            + in_path.file_stem().unwrap().to_str().unwrap()
-            + "_green."
-            + in_path.extension().unwrap().to_str().unwrap();
         let in_image = image::open(&in_path).expect("Opening image failed");
-
         let color = mean_color(&in_image, &rect).expect("Could not calculate mean color");
+
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() { *p = color; }
 
@@ -101,7 +103,11 @@ fn main() {
 
         //draw_hollow_rect_mut(&mut image, rect, Rgb([255u8, 255u8, 255u8]));
 
-        let _ = image.save(file_name).expect("Could not save file");
+        let path = match output_file_path(&out_path, &in_path) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+        let _ = image.save(path).expect("Could not save file");
     }
 }
 
