@@ -1,0 +1,9 @@
+[package]
+name = "image-generator"
+version = "0.1.0"
+authors = ["cdi <cdi@ableton.com>"]
+
+[dependencies]
+image = "*"
+imageproc = "*"
+rusttype = "*"
