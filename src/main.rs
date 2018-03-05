@@ -64,8 +64,20 @@ fn output_file_path(target_dir : &Path, source_file : &Path) -> Result<PathBuf, 
     //None => Err(Error::new(ErrorKind::Other, "Problem"),
 }
 
+fn obtain_area(args : Vec<String>) -> Result<Rect, Error> {
+    if args.len() != 4 {
+        return Err(Error::new(ErrorKind::Other, String::from("Not enough arguments to define the area to be analzed")))
+    }
+
+    let rect : Vec<i32> = args
+        .into_iter()
+        .map(|n| n.parse().expect("Cannot convert to integer!"))
+        .collect();
+    Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
+}
+
 fn main() {
-    if env::args().count() != 3 {
+    if env::args().count() != 7 {
         panic!("Please enter a target file path")
     };
     let args: Vec<String> = env::args().collect();
@@ -73,12 +85,12 @@ fn main() {
     if !metadata.is_dir() {
         panic!("Must be a directory");
     }
-    let default_x = 100;
-    let default_y = 100;
-    let default_width = 100;
-    let default_height = 100;
 
-    let rect = Rect::at(default_x, default_y).of_size(default_width, default_height);
+    let rect = match obtain_area(args.clone().split_off(3)) {
+        Ok(r) => r,
+        Err(e) => panic!("{}", e),
+    };
+
     let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
     let font = FontCollection::from_bytes(font).into_font().expect("Could not load font");
     let height = 22.4;
