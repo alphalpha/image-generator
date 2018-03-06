@@ -2,4 +2,6 @@
 /target/
 **/*.rs.bk
 *.jpg
+*.swp
+/Output/
 /test_data/
