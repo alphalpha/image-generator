@@ -86,12 +86,17 @@ fn obtain_area(args: Vec<String>) -> Result<Rect, Error> {
     Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
 }
 
-fn main() {
-    if env::args().count() != 6 {
+struct Config {
+    input_path: PathBuf,
+    output_path: PathBuf,
+    roi: Rect,
+}
+
+fn parse_config(args: &Vec<String>) -> Config {
+    if args.len() != 6 {
         panic!("Please enter a target file path")
     };
-    let args: Vec<String> = env::args().collect();
-    let input_dir = Path::new(&args[1]);
+    let input_dir = Path::new(&args[1]).to_path_buf();
     let metadata = input_dir.metadata().expect("Getting Metadata failed");
     if !metadata.is_dir() {
         panic!("First argument must be a directory");
@@ -103,6 +108,16 @@ fn main() {
         Ok(r) => r,
         Err(e) => panic!("{}", e),
     };
+    Config {
+        input_path: input_dir,
+        output_path: output_dir,
+        roi: rect,
+    }
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let config = parse_config(&args);
 
     let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
     let font = FontCollection::from_bytes(font)
@@ -111,11 +126,11 @@ fn main() {
     let font_scale = Scale { x: 22.4, y: 22.4 };
     let font_color = Rgb([255u8, 255u8, 255u8]);
 
-    let input_paths = image_paths(&input_dir).expect("Could not read files in directory");
+    let input_paths = image_paths(&config.input_path).expect("Could not read files in directory");
 
     for file in input_paths.iter() {
         let in_image = image::open(&file).expect("Opening image failed");
-        let color = mean_color(&in_image, &rect).expect("Could not calculate mean color");
+        let color = mean_color(&in_image, &config.roi).expect("Could not calculate mean color");
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() {
@@ -137,7 +152,7 @@ fn main() {
             text.as_str(),
         );
 
-        let path = match output_file_path(&output_dir, &file) {
+        let path = match output_file_path(&config.output_path, &file) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
