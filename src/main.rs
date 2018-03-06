@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::{fs, io};
 use std::io::{Error, ErrorKind};
-use imageproc::drawing::{draw_text_mut, draw_hollow_rect_mut};
+use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
 use rusttype::{FontCollection, Scale};
@@ -112,8 +112,6 @@ fn main() {
         };
 
         draw_text_mut(&mut image, Rgb([255u8, 255u8, 255u8]), 10, 10, scale, &font, text.as_str());
-
-        //draw_hollow_rect_mut(&mut image, rect, Rgb([255u8, 255u8, 255u8]));
 
         let path = match output_file_path(&out_path, &in_path) {
             Ok(p) => p,
