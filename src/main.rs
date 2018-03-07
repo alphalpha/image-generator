@@ -33,7 +33,7 @@ fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
     Ok(Rgb([color[0], color[1], color[2]]))
 }
 
-fn image_paths(dir: &str) -> Result<Vec<PathBuf>, io::Error> {
+fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
     let paths: Vec<_> = fs::read_dir(dir)?
         .map(|f| f.unwrap().path())
         .filter(|f| f.extension().is_some())
@@ -87,18 +87,19 @@ fn obtain_area(args: Vec<String>) -> Result<Rect, Error> {
 }
 
 fn main() {
-    if env::args().count() != 7 {
+    if env::args().count() != 6 {
         panic!("Please enter a target file path")
     };
     let args: Vec<String> = env::args().collect();
-    let metadata = Path::new(&args[1])
-        .metadata()
-        .expect("Getting Metadata failed");
+    let input_dir = Path::new(&args[1]);
+    let metadata = input_dir.metadata().expect("Getting Metadata failed");
     if !metadata.is_dir() {
-        panic!("Must be a directory");
+        panic!("First argument must be a directory");
     }
+    let output_dir = input_dir.join(Path::new("Output"));
+    fs::create_dir(&output_dir).expect("Could not create output directory");
 
-    let rect = match obtain_area(args.clone().split_off(3)) {
+    let rect = match obtain_area(args.clone().split_off(2)) {
         Ok(r) => r,
         Err(e) => panic!("{}", e),
     };
@@ -110,11 +111,10 @@ fn main() {
     let font_scale = Scale { x: 22.4, y: 22.4 };
     let font_color = Rgb([255u8, 255u8, 255u8]);
 
-    let out_path = Path::new(&args[2]);
-    let in_paths = image_paths(&args[1]).expect("Could not read files in directory");
+    let input_paths = image_paths(&input_dir).expect("Could not read files in directory");
 
-    for in_path in in_paths.iter() {
-        let in_image = image::open(&in_path).expect("Opening image failed");
+    for file in input_paths.iter() {
+        let in_image = image::open(&file).expect("Opening image failed");
         let color = mean_color(&in_image, &rect).expect("Could not calculate mean color");
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
@@ -122,7 +122,7 @@ fn main() {
             *p = color;
         }
 
-        let text = match citing(in_path.file_stem().unwrap().to_str().unwrap()) {
+        let text = match citing(file.file_stem().unwrap().to_str().unwrap()) {
             Ok(c) => c,
             Err(e) => panic!("{}", e),
         };
@@ -137,7 +137,7 @@ fn main() {
             text.as_str(),
         );
 
-        let path = match output_file_path(&out_path, &in_path) {
+        let path = match output_file_path(&output_dir, &file) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
