@@ -3,8 +3,7 @@ extern crate imageproc;
 extern crate rusttype;
 
 use std::path::{Path, PathBuf};
-use std::env;
-use std::{fs, io};
+use std::{env, fs, io, process};
 use std::io::{Error, ErrorKind};
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
@@ -72,12 +71,9 @@ fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, Er
     //None => Err(Error::new(ErrorKind::Other, "Problem"),
 }
 
-fn obtain_area(args: Vec<String>) -> Result<Rect, Error> {
+fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
     if args.len() != 4 {
-        return Err(Error::new(
-            ErrorKind::Other,
-            String::from("Not enough arguments to define the area to be analzed"),
-        ));
+        return Err("Not enough arguments to define the area to be analyzed");
     }
 
     let rect: Vec<i32> = args.into_iter()
@@ -96,40 +92,47 @@ struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    fn new(args: &Vec<String>) -> Config<'a> {
+    fn new(args: &Vec<String>) -> Result<Config<'a>, &'static str> {
         if args.len() != 6 {
-            panic!("Please enter a target file path")
+            return Err("Too many or not enough arguments have been provided!");
         };
         let input_dir = Path::new(&args[1]).to_path_buf();
         let metadata = input_dir.metadata().expect("Getting Metadata failed");
         if !metadata.is_dir() {
-            panic!("First argument must be a directory");
+            return Err("First argument must be a directory");
         }
         let output_dir = input_dir.join(Path::new("Output"));
-        fs::create_dir(&output_dir).expect("Could not create output directory");
+        match fs::create_dir(&output_dir) {
+            Ok(_) => {}
+            Err(_) => return Err("Output directory already exists"),
+        };
 
         let rect = match obtain_area(args.clone().split_off(2)) {
-            Ok(r) => r,
-            Err(e) => panic!("{}", e),
+            Ok(a) => a,
+            Err(e) => return Err(e),
         };
+
         let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
         let font = FontCollection::from_bytes(font)
             .into_font()
             .expect("Could not load font");
-        Config {
+        Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
             roi: rect,
             font: font,
             font_scale: Scale { x: 22.4, y: 22.4 },
             font_color: Rgb([255, 255, 255]),
-        }
+        })
     }
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let config = Config::new(&args);
+    let config = Config::new(&args).unwrap_or_else(|e| {
+        println!("Problem parsing arguments: {}", e);
+        process::exit(1);
+    });
 
     let input_paths = image_paths(&config.input_path).expect("Could not read files in directory");
 
