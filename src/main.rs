@@ -9,7 +9,7 @@ use std::io::{Error, ErrorKind};
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
-use rusttype::{FontCollection, Scale};
+use rusttype::{Font, FontCollection, Scale};
 
 fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
     let num_pixels = rect.width() * rect.height();
@@ -86,43 +86,47 @@ fn obtain_area(args: Vec<String>) -> Result<Rect, Error> {
     Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
 }
 
-struct Config {
+struct Config<'a> {
     input_path: PathBuf,
     output_path: PathBuf,
     roi: Rect,
+    font: Font<'a>,
 }
 
-fn parse_config(args: &Vec<String>) -> Config {
-    if args.len() != 6 {
-        panic!("Please enter a target file path")
-    };
-    let input_dir = Path::new(&args[1]).to_path_buf();
-    let metadata = input_dir.metadata().expect("Getting Metadata failed");
-    if !metadata.is_dir() {
-        panic!("First argument must be a directory");
-    }
-    let output_dir = input_dir.join(Path::new("Output"));
-    fs::create_dir(&output_dir).expect("Could not create output directory");
+impl<'a> Config<'a> {
+    fn new(args: &Vec<String>) -> Config<'a> {
+        if args.len() != 6 {
+            panic!("Please enter a target file path")
+        };
+        let input_dir = Path::new(&args[1]).to_path_buf();
+        let metadata = input_dir.metadata().expect("Getting Metadata failed");
+        if !metadata.is_dir() {
+            panic!("First argument must be a directory");
+        }
+        let output_dir = input_dir.join(Path::new("Output"));
+        fs::create_dir(&output_dir).expect("Could not create output directory");
 
-    let rect = match obtain_area(args.clone().split_off(2)) {
-        Ok(r) => r,
-        Err(e) => panic!("{}", e),
-    };
-    Config {
-        input_path: input_dir,
-        output_path: output_dir,
-        roi: rect,
+        let rect = match obtain_area(args.clone().split_off(2)) {
+            Ok(r) => r,
+            Err(e) => panic!("{}", e),
+        };
+        let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
+        let font = FontCollection::from_bytes(font)
+            .into_font()
+            .expect("Could not load font");
+        Config {
+            input_path: input_dir,
+            output_path: output_dir,
+            roi: rect,
+            font: font,
+        }
     }
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let config = parse_config(&args);
+    let config = Config::new(&args);
 
-    let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
-    let font = FontCollection::from_bytes(font)
-        .into_font()
-        .expect("Could not load font");
     let font_scale = Scale { x: 22.4, y: 22.4 };
     let font_color = Rgb([255u8, 255u8, 255u8]);
 
@@ -148,7 +152,7 @@ fn main() {
             10,
             10,
             font_scale,
-            &font,
+            &config.font,
             text.as_str(),
         );
 
