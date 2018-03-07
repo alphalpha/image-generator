@@ -91,6 +91,8 @@ struct Config<'a> {
     output_path: PathBuf,
     roi: Rect,
     font: Font<'a>,
+    font_scale: Scale,
+    font_color: Rgb<u8>,
 }
 
 impl<'a> Config<'a> {
@@ -119,6 +121,8 @@ impl<'a> Config<'a> {
             output_path: output_dir,
             roi: rect,
             font: font,
+            font_scale: Scale { x: 22.4, y: 22.4 },
+            font_color: Rgb([255, 255, 255]),
         }
     }
 }
@@ -126,9 +130,6 @@ impl<'a> Config<'a> {
 fn main() {
     let args: Vec<String> = env::args().collect();
     let config = Config::new(&args);
-
-    let font_scale = Scale { x: 22.4, y: 22.4 };
-    let font_color = Rgb([255u8, 255u8, 255u8]);
 
     let input_paths = image_paths(&config.input_path).expect("Could not read files in directory");
 
@@ -148,10 +149,10 @@ fn main() {
 
         draw_text_mut(
             &mut image,
-            font_color,
+            config.font_color,
             10,
             10,
-            font_scale,
+            config.font_scale,
             &config.font,
             text.as_str(),
         );
