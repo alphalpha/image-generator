@@ -4,7 +4,8 @@ extern crate rusttype;
 
 use std::path::{Path, PathBuf};
 use std::{env, fs, io, process};
-use std::io::{Error, ErrorKind, Read};
+use std::error::Error;
+use std::io::{ErrorKind, Read};
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
@@ -55,14 +56,14 @@ fn citing(name: &str) -> Result<String, std::io::Error> {
                 parts[0].to_string() + ", " + &date + ", " + &time,
             ))
         }
-        _ => Err(Error::new(
+        _ => Err(io::Error::new(
             ErrorKind::Other,
             String::from("File: \"".to_string() + name + "\" has wrong name format"),
         )),
     }
 }
 
-fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, Error> {
+fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, io::Error> {
     let mut stem = source_file.file_stem().unwrap().to_os_string();
     stem.push("_green");
     Ok(target_dir
@@ -143,7 +144,7 @@ impl<'a> Config<'a> {
     }
 }
 
-fn run(config: Config) {
+fn run(config: Config) -> Result<(), Box<Error>> {
     let input_paths = image_paths(&config.input_path).expect("Could not read files in directory");
     for file in input_paths.iter() {
         let in_image = image::open(&file).expect("Opening image failed");
@@ -175,6 +176,7 @@ fn run(config: Config) {
         };
         let _ = image.save(path).expect("Could not save file");
     }
+    Ok(())
 }
 
 fn main() {
@@ -184,5 +186,8 @@ fn main() {
         process::exit(1);
     });
 
-    run(config);
+    if let Err(e) = run(config) {
+        println!("Application Error: {}", e);
+        process::exit(1);
+    }
 }
