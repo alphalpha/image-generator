@@ -143,15 +143,8 @@ impl<'a> Config<'a> {
     }
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config = Config::new(&args).unwrap_or_else(|e| {
-        println!("Problem parsing arguments: {}", e);
-        process::exit(1);
-    });
-
+fn run(config: Config) {
     let input_paths = image_paths(&config.input_path).expect("Could not read files in directory");
-
     for file in input_paths.iter() {
         let in_image = image::open(&file).expect("Opening image failed");
         let color = mean_color(&in_image, &config.roi).expect("Could not calculate mean color");
@@ -182,4 +175,14 @@ fn main() {
         };
         let _ = image.save(path).expect("Could not save file");
     }
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let config = Config::new(&args).unwrap_or_else(|e| {
+        println!("Problem parsing arguments: {}", e);
+        process::exit(1);
+    });
+
+    run(config);
 }
