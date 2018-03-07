@@ -107,11 +107,8 @@ fn main() {
     let font = FontCollection::from_bytes(font)
         .into_font()
         .expect("Could not load font");
-    let height = 22.4;
-    let scale = Scale {
-        x: height * 1.0,
-        y: height,
-    };
+    let font_scale = Scale { x: 22.4, y: 22.4 };
+    let font_color = Rgb([255u8, 255u8, 255u8]);
 
     let out_path = Path::new(&args[2]);
     let in_paths = image_paths(&args[1]).expect("Could not read files in directory");
@@ -132,10 +129,10 @@ fn main() {
 
         draw_text_mut(
             &mut image,
-            Rgb([255u8, 255u8, 255u8]),
+            font_color,
             10,
             10,
-            scale,
+            font_scale,
             &font,
             text.as_str(),
         );
