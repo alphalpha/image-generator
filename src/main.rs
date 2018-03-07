@@ -4,11 +4,11 @@ extern crate rusttype;
 
 use std::path::{Path, PathBuf};
 use std::{env, fs, io, process};
-use std::io::{Error, ErrorKind};
+use std::io::{Error, ErrorKind, Read};
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
-use rusttype::{Font, FontCollection, Scale};
+use rusttype::{FontCollection, Scale};
 
 fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
     let num_pixels = rect.width() * rect.height();
@@ -82,13 +82,34 @@ fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
     Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
 }
 
+struct Font<'a> {
+    font: rusttype::Font<'a>,
+    scale: Scale,
+    color: Rgb<u8>,
+}
+
+impl<'a> Font<'a> {
+    fn new(path: &Path) -> Result<Font<'a>, &'static str> {
+        let mut file = fs::File::open(path).unwrap();
+        let mut buffer: Vec<u8> = Vec::new();
+        file.read_to_end(&mut buffer)
+            .expect("Could not read font file");
+        let font = FontCollection::from_bytes(buffer.to_vec())
+            .into_font()
+            .expect("Could not load font");
+        Ok(Font {
+            font: font,
+            scale: Scale { x: 22.4, y: 22.4 },
+            color: Rgb([255, 255, 255]),
+        })
+    }
+}
+
 struct Config<'a> {
     input_path: PathBuf,
     output_path: PathBuf,
     roi: Rect,
     font: Font<'a>,
-    font_scale: Scale,
-    font_color: Rgb<u8>,
 }
 
 impl<'a> Config<'a> {
@@ -112,17 +133,12 @@ impl<'a> Config<'a> {
             Err(e) => return Err(e),
         };
 
-        let font = Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8]);
-        let font = FontCollection::from_bytes(font)
-            .into_font()
-            .expect("Could not load font");
+        let font = Font::new(Path::new("src/DejaVuSans.ttf")).unwrap();
         Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
             roi: rect,
             font: font,
-            font_scale: Scale { x: 22.4, y: 22.4 },
-            font_color: Rgb([255, 255, 255]),
         })
     }
 }
@@ -152,11 +168,11 @@ fn main() {
 
         draw_text_mut(
             &mut image,
-            config.font_color,
+            config.font.color,
             10,
             10,
-            config.font_scale,
-            &config.font,
+            config.font.scale,
+            &config.font.font,
             text.as_str(),
         );
 
