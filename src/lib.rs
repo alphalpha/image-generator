@@ -140,19 +140,11 @@ fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
 }
 
 pub fn run(config: Config) -> Result<(), Box<Error>> {
-    let input_paths = match image_paths(&config.input_path) {
-        Ok(p) => p,
-        Err(e) => return Err(Box::new(e)),
-    };
+    let input_paths = image_paths(&config.input_path).map_err(|e| Box::new(e))?;
+
     for file in input_paths.iter() {
-        let in_image = match image::open(&file) {
-            Ok(i) => i,
-            Err(e) => return Err(Box::new(e)),
-        };
-        let color = match mean_color(&in_image, &config.roi) {
-            Ok(c) => c,
-            Err(e) => return Err(Box::new(e)),
-        };
+        let in_image = try!(image::open(&file));
+        let color = try!(mean_color(&in_image, &config.roi));
         println!("{:?}", color);
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
@@ -160,31 +152,27 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
             *p = color;
         }
 
-        if let Some(name) = file.file_stem().and_then(|f| f.to_str()) {
-            let text = match citing(name) {
-                Ok(c) => c,
-                Err(e) => return Err(Box::new(e)),
-            };
+        let text = file.file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| {
+                Box::new(io::Error::new(
+                    ErrorKind::Other,
+                    String::from("Cannot obtain file name"),
+                ))
+            })
+            .and_then(|n| citing(n).map_err(|e| Box::new(e)))?;
 
-            draw_text_mut(
-                &mut image,
-                config.font.color,
-                10,
-                10,
-                config.font.scale,
-                &config.font.font,
-                text.as_str(),
-            );
+        draw_text_mut(
+            &mut image,
+            config.font.color,
+            10,
+            10,
+            config.font.scale,
+            &config.font.font,
+            text.as_str(),
+        );
 
-            let path = match output_file_path(&config.output_path, &file) {
-                Ok(p) => p,
-                Err(e) => return Err(Box::new(e)),
-            };
-            match image.save(path) {
-                Ok(_) => (),
-                Err(e) => return Err(Box::new(e)),
-            };
-        }
+        try!(output_file_path(&config.output_path, &file).and_then(|path| image.save(path)));
     }
     Ok(())
 }
