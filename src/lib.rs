@@ -124,12 +124,24 @@ fn citing(name: &str) -> Result<String, std::io::Error> {
 }
 
 fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, io::Error> {
-    let mut stem = source_file.file_stem().unwrap().to_os_string();
+    let mut stem = source_file
+        .file_stem()
+        .ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::Other,
+                String::from("Could not extract the file name"),
+            )
+        })?
+        .to_os_string();
     stem.push("_green");
     Ok(target_dir
         .join(stem)
-        .with_extension(source_file.extension().unwrap()))
-    //None => Err(Error::new(ErrorKind::Other, "Problem"),
+        .with_extension(source_file.extension().ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::Other,
+                String::from("Could not obtain the file extension"),
+            )
+        })?))
 }
 
 fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
