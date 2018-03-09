@@ -18,19 +18,22 @@ pub struct Font<'a> {
 }
 
 impl<'a> Font<'a> {
-    fn new(path: &Path) -> Result<Font<'a>, &'static str> {
-        let mut file = fs::File::open(path).unwrap();
+    fn new(path: &Path) -> Result<Font<'a>, io::Error> {
+        let mut file = fs::File::open(path)?;
         let mut buffer: Vec<u8> = Vec::new();
-        file.read_to_end(&mut buffer)
-            .expect("Could not read font file");
-        let font = FontCollection::from_bytes(buffer.to_vec())
-            .into_font()
-            .expect("Could not load font");
-        Ok(Font {
-            font: font,
-            scale: Scale { x: 22.4, y: 22.4 },
-            color: Rgb([255, 255, 255]),
-        })
+        file.read_to_end(&mut buffer)?;
+        if let Some(font) = FontCollection::from_bytes(buffer.to_vec()).into_font() {
+            Ok(Font {
+                font: font,
+                scale: Scale { x: 22.4, y: 22.4 },
+                color: Rgb([255, 255, 255]),
+            })
+        } else {
+            Err(io::Error::new(
+                ErrorKind::Other,
+                String::from("Could not obtain the file extension"),
+            ))
+        }
     }
 }
 
