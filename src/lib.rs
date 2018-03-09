@@ -95,8 +95,9 @@ fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
 
 fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
     let paths: Vec<_> = fs::read_dir(dir)?
-        .map(|f| f.unwrap().path())
-        .filter(|f| f.extension().is_some())
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some())
         .collect();
     Ok(paths)
 }
