@@ -146,9 +146,7 @@ fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, io
 }
 
 fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
-    let rect: Vec<i32> = args.into_iter()
-        .map(|n| n.parse().expect("Cannot convert to integer!"))
-        .collect();
+    let rect: Vec<i32> = args.into_iter().filter_map(|n| n.parse().ok()).collect();
     Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
 }
 
