@@ -45,27 +45,27 @@ pub struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub fn new(args: &Vec<String>) -> Result<Config<'a>, &'static str> {
+    pub fn new(args: &Vec<String>) -> Result<Config<'a>, Box<Error>> {
         if args.len() != 6 {
-            return Err("Too many or not enough arguments have been provided!");
+            return Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                String::from("Too many or not enough arguments have been provided!"),
+            )));
         };
         let input_dir = Path::new(&args[1]).to_path_buf();
-        let metadata = input_dir.metadata().expect("Getting Metadata failed");
+        let metadata = try!(input_dir.metadata());
         if !metadata.is_dir() {
-            return Err("First argument must be a directory");
+            return Err(Box::new(io::Error::new(
+                ErrorKind::Other,
+                String::from("First argument must be a directory"),
+            )));
         }
         let output_dir = input_dir.join(Path::new("Output"));
-        match fs::create_dir(&output_dir) {
-            Ok(_) => {}
-            Err(_) => return Err("Output directory already exists"),
-        };
+        try!(fs::create_dir(&output_dir));
 
-        let rect = match obtain_area(args.clone().split_off(2)) {
-            Ok(a) => a,
-            Err(e) => return Err(e),
-        };
+        let rect = try!(obtain_area(args.clone().split_off(2)));
 
-        let font = Font::new(Path::new("src/DejaVuSans.ttf")).unwrap();
+        let font = try!(Font::new(Path::new("src/DejaVuSans.ttf")));
         Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
