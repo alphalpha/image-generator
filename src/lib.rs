@@ -3,13 +3,69 @@ extern crate imageproc;
 extern crate rusttype;
 
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::{error, fmt, fs, io, num};
 use std::error::Error;
-use std::io::{ErrorKind, Read};
+use std::io::Read;
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
 use image::{DynamicImage, GenericImage, Rgb, RgbImage};
 use rusttype::{FontCollection, Scale};
+
+#[derive(Debug)]
+pub enum CliError {
+    Io(io::Error),
+    Parse(num::ParseIntError),
+    Custom(String),
+    Else,
+}
+
+impl fmt::Display for CliError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            CliError::Io(ref err) => write!(f, "IO Error: {}", err),
+            CliError::Parse(ref err) => write!(f, "Parse Error {}", err),
+            CliError::Custom(ref err) => write!(f, "Error {}", err),
+            CliError::Else => write!(f, "Some Error"),
+        }
+    }
+}
+
+impl error::Error for CliError {
+    fn description(&self) -> &str {
+        match *self {
+            CliError::Io(ref err) => err.description(),
+            CliError::Parse(ref err) => err.description(),
+            CliError::Custom(ref err) => err,
+            CliError::Else => "Some Error",
+        }
+    }
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            CliError::Io(ref err) => Some(err),
+            CliError::Parse(ref err) => Some(err),
+            CliError::Custom(_) => None,
+            CliError::Else => None,
+        }
+    }
+}
+
+impl From<io::Error> for CliError {
+    fn from(err: io::Error) -> CliError {
+        CliError::Io(err)
+    }
+}
+
+impl From<num::ParseIntError> for CliError {
+    fn from(err: num::ParseIntError) -> CliError {
+        CliError::Parse(err)
+    }
+}
+
+impl From<String> for CliError {
+    fn from(err: String) -> CliError {
+        CliError::Custom(err)
+    }
+}
 
 pub struct Font<'a> {
     pub font: rusttype::Font<'a>,
@@ -18,7 +74,7 @@ pub struct Font<'a> {
 }
 
 impl<'a> Font<'a> {
-    fn new(path: &Path) -> Result<Font<'a>, io::Error> {
+    fn new(path: &Path) -> Result<Font<'a>, CliError> {
         let mut file = fs::File::open(path)?;
         let mut buffer: Vec<u8> = Vec::new();
         file.read_to_end(&mut buffer)?;
@@ -29,10 +85,9 @@ impl<'a> Font<'a> {
                 color: Rgb([255, 255, 255]),
             })
         } else {
-            Err(io::Error::new(
-                ErrorKind::Other,
-                String::from("Could not obtain the file extension"),
-            ))
+            Err(CliError::Custom(String::from(
+                "Could not obtain the file extension",
+            )))
         }
     }
 }
@@ -45,19 +100,17 @@ pub struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub fn new(args: &Vec<String>) -> Result<Config<'a>, Box<Error>> {
+    pub fn new(args: &Vec<String>) -> Result<Config<'a>, CliError> {
         if args.len() != 6 {
-            return Err(Box::new(io::Error::new(
-                ErrorKind::Other,
-                String::from("Too many or not enough arguments have been provided!"),
+            return Err(CliError::Custom(String::from(
+                "Too many or not enough arguments have been provided!",
             )));
         };
         let input_dir = Path::new(&args[1]).to_path_buf();
         let metadata = try!(input_dir.metadata());
         if !metadata.is_dir() {
-            return Err(Box::new(io::Error::new(
-                ErrorKind::Other,
-                String::from("First argument must be a directory"),
+            return Err(CliError::Custom(String::from(
+                "First argument must be a directory",
             )));
         }
         let output_dir = input_dir.join(Path::new("Output"));
@@ -75,7 +128,7 @@ impl<'a> Config<'a> {
     }
 }
 
-fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
+fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, CliError> {
     let num_pixels = rect.width() * rect.height();
 
     let color: Vec<u8> = img.pixels()
@@ -96,7 +149,7 @@ fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
     Ok(Rgb([color[0], color[1], color[2]]))
 }
 
-fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
+fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, CliError> {
     let paths: Vec<_> = fs::read_dir(dir)?
         .filter_map(|e| e.ok())
         .map(|e| e.path())
@@ -105,7 +158,7 @@ fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
     Ok(paths)
 }
 
-fn citing(name: &str) -> Result<String, std::io::Error> {
+fn citing(name: &str) -> Result<String, CliError> {
     let mut parts: Vec<&str> = name.splitn(5, '_').collect();
     match parts.len() {
         5 => {
@@ -120,35 +173,24 @@ fn citing(name: &str) -> Result<String, std::io::Error> {
                 parts[0].to_string() + ", " + &date + ", " + &time,
             ))
         }
-        _ => Err(io::Error::new(
-            ErrorKind::Other,
-            String::from("File: \"".to_string() + name + "\" has wrong name format"),
-        )),
+        _ => Err(CliError::Custom(String::from(
+            "File: \"".to_string() + name + "\" has wrong name format",
+        ))),
     }
 }
 
-fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, io::Error> {
+fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, CliError> {
     let mut stem = source_file
         .file_stem()
-        .ok_or_else(|| {
-            io::Error::new(
-                ErrorKind::Other,
-                String::from("Could not extract the file name"),
-            )
-        })?
+        .ok_or_else(|| CliError::Custom(String::from("Could not extract the file name")))?
         .to_os_string();
     stem.push("_green");
-    Ok(target_dir
-        .join(stem)
-        .with_extension(source_file.extension().ok_or_else(|| {
-            io::Error::new(
-                ErrorKind::Other,
-                String::from("Could not obtain the file extension"),
-            )
-        })?))
+    Ok(target_dir.join(stem).with_extension(source_file
+        .extension()
+        .ok_or_else(|| CliError::Custom(String::from("Could not obtain the file extension")))?))
 }
 
-fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
+fn obtain_area(args: Vec<String>) -> Result<Rect, CliError> {
     let rect: Vec<i32> = args.into_iter().filter_map(|n| n.parse().ok()).collect();
     Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
 }
@@ -168,12 +210,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
 
         let text = file.file_stem()
             .and_then(|s| s.to_str())
-            .ok_or_else(|| {
-                Box::new(io::Error::new(
-                    ErrorKind::Other,
-                    String::from("Cannot obtain file name"),
-                ))
-            })
+            .ok_or_else(|| Box::new(CliError::Custom(String::from("Cannot obtain file name"))))
             .and_then(|n| citing(n).map_err(|e| Box::new(e)))?;
 
         draw_text_mut(
@@ -186,7 +223,10 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
             text.as_str(),
         );
 
-        try!(output_file_path(&config.output_path, &file).and_then(|path| image.save(path)));
+        try!(
+            output_file_path(&config.output_path, &file)
+                .and_then(|path| image.save(path).map_err(|e| CliError::Io(e)))
+        );
     }
     Ok(())
 }
