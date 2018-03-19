@@ -90,7 +90,6 @@ fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, io::Error> {
         .map(|c| (c / num_pixels) as u8)
         .collect();
 
-    println!("{:?}", color);
     Ok(Rgb([color[0], color[1], color[2]]))
 }
 
@@ -145,6 +144,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
     for file in input_paths.iter() {
         let in_image = image::open(&file).expect("Opening image failed");
         let color = mean_color(&in_image, &config.roi).expect("Could not calculate mean color");
+        println!("{:?}", color);
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() {
