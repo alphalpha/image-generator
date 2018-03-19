@@ -134,10 +134,6 @@ fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, io
 }
 
 fn obtain_area(args: Vec<String>) -> Result<Rect, &'static str> {
-    if args.len() != 4 {
-        return Err("Not enough arguments to define the area to be analyzed");
-    }
-
     let rect: Vec<i32> = args.into_iter()
         .map(|n| n.parse().expect("Cannot convert to integer!"))
         .collect();
