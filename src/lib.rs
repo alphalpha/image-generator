@@ -23,8 +23,8 @@ impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             CliError::Io(ref err) => write!(f, "IO Error: {}", err),
-            CliError::Parse(ref err) => write!(f, "Parse Error {}", err),
-            CliError::Custom(ref err) => write!(f, "Error {}", err),
+            CliError::Parse(ref err) => write!(f, "Parse Errori: {}", err),
+            CliError::Custom(ref err) => write!(f, "Error: {}", err),
             CliError::Else => write!(f, "Some Error"),
         }
     }
