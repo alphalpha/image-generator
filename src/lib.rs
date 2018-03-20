@@ -119,13 +119,17 @@ impl<'a> Config<'a> {
         let output_dir = input_dir.join(Path::new("Output"));
         try!(fs::create_dir(&output_dir));
 
+        let font: Font = try!(
+            args.next()
+                .ok_or(CliError::Custom(String::from("Cannot parse font path")))
+                .and_then(|p| Font::new(Path::new(&p)))
+        );
         let rect: Vec<String> = args.collect();
         if rect.len() != 4 {
             return Err(CliError::Custom(String::from("Not enough arguments")));
         }
         let rect = try!(obtain_area(rect));
 
-        let font = try!(Font::new(Path::new("src/DejaVuSans.ttf")));
         Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
