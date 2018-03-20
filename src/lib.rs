@@ -70,18 +70,16 @@ impl<'a> Config<'a> {
                 .ok_or(util::Error::Custom(String::from("Cannot parse font path")))
                 .and_then(|p| Font::new(Path::new(&p)))
         );
-        let rect: Vec<String> = args.collect();
+
+        let rect: Vec<i32> = args.filter_map(|n| n.parse().ok()).collect();
         if rect.len() != 4 {
-            return Err(util::Error::Custom(String::from(
-                "Not enough arguments",
-            )));
+            return Err(util::Error::Custom(String::from("Not enough arguments")));
         }
-        let rect = try!(obtain_area(rect));
 
         Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
-            roi: rect,
+            roi: Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32),
             font: font,
         })
     }
@@ -144,16 +142,9 @@ fn output_file_path(target_dir: &Path, source_file: &Path) -> Result<PathBuf, ut
         .ok_or_else(|| util::Error::Custom(String::from("Could not extract the file name")))?
         .to_os_string();
     stem.push("_green");
-    Ok(target_dir
-        .join(stem)
-        .with_extension(source_file.extension().ok_or_else(|| {
-            util::Error::Custom(String::from("Could not obtain the file extension"))
-        })?))
-}
-
-fn obtain_area(args: Vec<String>) -> Result<Rect, util::Error> {
-    let rect: Vec<i32> = args.into_iter().filter_map(|n| n.parse().ok()).collect();
-    Ok(Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32))
+    Ok(target_dir.join(stem).with_extension(source_file
+        .extension()
+        .ok_or_else(|| util::Error::Custom(String::from("Could not obtain the file extension")))?))
 }
 
 pub fn run(config: Config) -> Result<(), Box<Error>> {
