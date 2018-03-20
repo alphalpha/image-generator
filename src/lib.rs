@@ -100,25 +100,36 @@ pub struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub fn new(args: &Vec<String>) -> Result<Config<'a>, CliError> {
-        if args.len() != 6 {
-            return Err(CliError::Custom(String::from(
-                "Too many or not enough arguments have been provided!",
-            )));
-        };
-        let input_dir = Path::new(&args[1]).to_path_buf();
-        let metadata = try!(input_dir.metadata());
-        if !metadata.is_dir() {
-            return Err(CliError::Custom(String::from(
-                "First argument must be a directory",
-            )));
+    pub fn new(mut args: std::env::Args) -> Result<Config<'a>, CliError> {
+        args.next();
+        let input_dir = try!(
+            args.next()
+                .ok_or(CliError::Custom(String::from(
+                    "Cannot parse input directory"
+                )))
+                .map(|p| Path::new(&p).to_path_buf())
+        );
+        if let Ok(metadata) = input_dir.metadata() {
+            if !metadata.is_dir() {
+                return Err(CliError::Custom(String::from(
+                    "Input path is not a directory",
+                )));
+            };
         }
         let output_dir = input_dir.join(Path::new("Output"));
         try!(fs::create_dir(&output_dir));
 
-        let rect = try!(obtain_area(args.clone().split_off(2)));
+        let font: Font = try!(
+            args.next()
+                .ok_or(CliError::Custom(String::from("Cannot parse font path")))
+                .and_then(|p| Font::new(Path::new(&p)))
+        );
+        let rect: Vec<String> = args.collect();
+        if rect.len() != 4 {
+            return Err(CliError::Custom(String::from("Not enough arguments")));
+        }
+        let rect = try!(obtain_area(rect));
 
-        let font = try!(Font::new(Path::new("src/DejaVuSans.ttf")));
         Ok(Config {
             input_path: input_dir,
             output_path: output_dir,
