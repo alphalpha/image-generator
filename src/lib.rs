@@ -10,7 +10,7 @@ use std::error::Error;
 use std::io::Read;
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
-use image::{DynamicImage, GenericImage, Rgb, RgbImage};
+use image::{GenericImage, Rgb, RgbImage};
 use rusttype::{FontCollection, Scale};
 
 pub struct Font<'a> {
@@ -85,17 +85,24 @@ impl<'a> Config<'a> {
     }
 }
 
-fn mean_color(img: &DynamicImage, rect: &Rect) -> Result<Rgb<u8>, util::Error> {
-    let num_pixels = rect.width() * rect.height();
+fn crop_image(image: &mut RgbImage, rect: &Rect) -> Result<RgbImage, util::Error> {
+    Ok(image
+        .sub_image(
+            rect.left() as u32,
+            rect.top() as u32,
+            rect.width(),
+            rect.height(),
+        )
+        .to_image())
+}
 
-    let color: Vec<u8> = img.pixels()
-        .filter(|f| {
-            (f.0 >= rect.left() as u32 && f.0 < (rect.left() as u32 + rect.width() as u32))
-                && (f.1 >= rect.top() as u32 && f.1 < (rect.top() as u32 + rect.height() as u32))
-        })
+fn mean_color(image: &RgbImage) -> Result<Rgb<u8>, util::Error> {
+    let num_pixels = image.width() * image.height();
+    let color: Vec<u8> = image
+        .pixels()
         .fold(vec![0u32, 0u32, 0u32], |mut acc, pixel| {
             for i in 0..acc.len() {
-                acc[i] += pixel.2[i] as u32;
+                acc[i] += pixel[i] as u32;
             }
             acc
         })
@@ -152,7 +159,8 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
 
     for file in input_paths.iter() {
         let in_image = try!(image::open(&file));
-        let color = try!(mean_color(&in_image, &config.roi));
+        let color =
+            try!(crop_image(&mut in_image.to_rgb(), &config.roi).and_then(|i| mean_color(&i)));
         println!("{:?}", color);
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
@@ -185,8 +193,16 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
-    fn it_works() {
-        assert_eq!(1, 1);
+    fn mean_color_works() {
+        use image::{Rgb, RgbImage};
+        let expected = Rgb([42 as u8, 21 as u8, 84 as u8]);
+        let mut image = RgbImage::new(10, 10);
+        for p in image.pixels_mut() {
+            *p = expected;
+        }
+        let actual = mean_color(&mut image).unwrap();
+        assert_eq!(expected, actual);
     }
 }
