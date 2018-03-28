@@ -17,6 +17,7 @@ pub struct Font<'a> {
     pub font: rusttype::Font<'a>,
     pub scale: Scale,
     pub color: Rgb<u8>,
+    pub pos: (u32, u32),
 }
 
 impl<'a> Font<'a> {
@@ -29,6 +30,7 @@ impl<'a> Font<'a> {
                 font: font,
                 scale: Scale { x: 22.4, y: 22.4 },
                 color: Rgb([255, 255, 255]),
+                pos: (10, 10),
             })
         } else {
             Err(util::Error::Custom(String::from(
@@ -176,8 +178,8 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         draw_text_mut(
             &mut image,
             config.font.color,
-            10,
-            10,
+            config.font.pos.0,
+            config.font.pos.1,
             config.font.scale,
             &config.font.font,
             text.as_str(),
