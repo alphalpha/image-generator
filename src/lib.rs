@@ -210,7 +210,7 @@ fn image_paths(dir: &Path) -> Result<Vec<PathBuf>, util::Error> {
     Ok(paths)
 }
 
-fn citing(name: &str) -> Result<String, util::Error> {
+fn parse_date(name: &str) -> Result<String, util::Error> {
     let mut parts: Vec<&str> = name.splitn(5, '_').collect();
     match parts.len() {
         5 => {
@@ -221,9 +221,7 @@ fn citing(name: &str) -> Result<String, util::Error> {
             let (hour, rest) = parts[2].split_at(2);
             let (minutes, seconds) = rest.split_at(2);
             let time = hour.to_string() + ":" + minutes + ":" + seconds;
-            Ok(String::from(
-                parts[0].to_string() + ", " + &date + ", " + &time,
-            ))
+            Ok(String::from(date + ", " + &time))
         }
         _ => Err(util::Error::Custom(String::from(
             "File: \"".to_string() + name + "\" has wrong name format",
@@ -259,7 +257,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let text = file.file_stem()
             .and_then(|s| s.to_str())
             .ok_or_else(|| Box::new(util::Error::Custom(String::from("Cannot obtain file name"))))
-            .and_then(|n| citing(n).map_err(|e| Box::new(e)))?;
+            .and_then(|n| parse_date(n).map_err(|e| Box::new(e)))?;
 
         draw_text_mut(
             &mut image,
