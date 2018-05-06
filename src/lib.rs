@@ -4,6 +4,7 @@ extern crate rusttype;
 
 mod util;
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs;
 use std::error::Error;
@@ -45,6 +46,7 @@ pub struct Config<'a> {
     pub output_path: PathBuf,
     pub roi: Rect,
     pub font: Font<'a>,
+    pub location: String,
 }
 
 impl<'a> Config<'a> {
@@ -67,6 +69,21 @@ impl<'a> Config<'a> {
         let output_dir = input_dir.join(Path::new("Output"));
         try!(fs::create_dir(&output_dir));
 
+        let location_map = try!(location_map());
+        let location = try!(
+            args.next()
+                .ok_or(util::Error::Custom(String::from(
+                    "Cannot parse location info",
+                )))
+                .and_then(
+                    |l| location_map.get(&l).ok_or(util::Error::Custom(String::from(
+                        "Given location info is unknown",
+                    )))
+                )
+        ).clone();
+
+        println!("Location {}", location);
+
         let font: Font = try!(
             args.next()
                 .ok_or(util::Error::Custom(String::from("Cannot parse font path")))
@@ -83,8 +100,15 @@ impl<'a> Config<'a> {
             output_path: output_dir,
             roi: Rect::at(rect[0], rect[1]).of_size(rect[2] as u32, rect[3] as u32),
             font: font,
+            location: location,
         })
     }
+}
+
+fn location_map() -> Result<HashMap<String, String>, util::Error> {
+    let mut location_map: HashMap<String, String> = HashMap::new();
+    location_map.insert(String::from("MC105"), String::from("Punkaharju, landscape"));
+    Ok(location_map)
 }
 
 fn crop_image(image: &mut RgbImage, rect: &Rect) -> Result<RgbImage, util::Error> {

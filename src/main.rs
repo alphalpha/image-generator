@@ -6,8 +6,8 @@ use image_generator::Config;
 
 fn help() -> String {
     String::from("usage: \
-    image-generator [<images_path>] [<font_path] [<x-coordinate> <y-coordinate> <width> <height>]\n\
-    example: image-generator src/test_data src/DejaVuSans.ttf 100 100 100 100")
+    image-generator [<images_path>] [<Camera_ID>] [<font_path] [<x-coordinate> <y-coordinate> <width> <height>] [text_before_date_and_time]\n\
+    example: image-generator src/test_data MC105 src/DejaVuSans.ttf 100 100 100 100")
 }
 
 fn main() {
