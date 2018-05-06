@@ -269,6 +269,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
 }
 
 fn draw_citing(image: &mut RgbImage, config: &Config, date: &String) {
+    let location_date = config.location.clone() + ", " + date;
     draw_text_mut(
         image,
         config.font.color,
@@ -276,7 +277,18 @@ fn draw_citing(image: &mut RgbImage, config: &Config, date: &String) {
         config.font.pos.1,
         config.font.scale,
         &config.font.font,
-        date.as_str(),
+        location_date.as_str(),
+    );
+
+    let color_title = "Average colour of forest activity";
+    draw_text_mut(
+        image,
+        config.font.color,
+        config.font.pos.0,
+        config.font.pos.1 + config.font.scale.y as u32,
+        config.font.scale,
+        &config.font.font,
+        color_title,
     );
 }
 
