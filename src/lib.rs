@@ -254,27 +254,30 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
             *p = color;
         }
 
-        let text = file.file_stem()
+        let date = file.file_stem()
             .and_then(|s| s.to_str())
             .ok_or_else(|| Box::new(util::Error::Custom(String::from("Cannot obtain file name"))))
             .and_then(|n| parse_date(n).map_err(|e| Box::new(e)))?;
 
-        draw_text_mut(
-            &mut image,
-            config.font.color,
-            config.font.pos.0,
-            config.font.pos.1,
-            config.font.scale,
-            &config.font.font,
-            text.as_str(),
-        );
-
+        draw_citing(&mut image, &config, &date);
         try!(
             output_file_path(&config.output_path, &file)
                 .and_then(|path| image.save(path).map_err(|e| util::Error::Io(e)))
         );
     }
     Ok(())
+}
+
+fn draw_citing(image: &mut RgbImage, config: &Config, date: &String) {
+    draw_text_mut(
+        image,
+        config.font.color,
+        config.font.pos.0,
+        config.font.pos.1,
+        config.font.scale,
+        &config.font.font,
+        date.as_str(),
+    );
 }
 
 #[cfg(test)]
