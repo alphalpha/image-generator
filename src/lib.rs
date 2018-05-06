@@ -107,7 +107,69 @@ impl<'a> Config<'a> {
 
 fn location_map() -> Result<HashMap<String, String>, util::Error> {
     let mut location_map: HashMap<String, String> = HashMap::new();
+    location_map.insert(String::from("MC100"), String::from("Tammela, canopy"));
+    location_map.insert(String::from("MC101"), String::from("Tammela, ground"));
+    location_map.insert(String::from("MC102"), String::from("Tammela, crown"));
+
+    location_map.insert(String::from("MC103"), String::from("Punkaharju, ground"));
+    location_map.insert(String::from("MC104"), String::from("Punkaharju, crown"));
     location_map.insert(String::from("MC105"), String::from("Punkaharju, landscape"));
+
+    location_map.insert(String::from("MC106"), String::from("Hyytiälä, crown"));
+    location_map.insert(String::from("MC107"), String::from("Hyytiälä, ground"));
+
+    location_map.insert(
+        String::from("MC108"),
+        String::from("Sodankylä, forest, canopy"),
+    );
+    location_map.insert(
+        String::from("MC109"),
+        String::from("Sodankylä, forest, crown"),
+    );
+    location_map.insert(
+        String::from("MC110"),
+        String::from("Sodankylä, forest, ground"),
+    );
+
+    location_map.insert(
+        String::from("MC111"),
+        String::from("Sodankylä, wetland, ground"),
+    );
+
+    location_map.insert(String::from("MC112"), String::from("Parkano, landscape"));
+
+    location_map.insert(String::from("MC113"), String::from("Suonenjoki, canopy"));
+
+    location_map.insert(String::from("MC114"), String::from("Kenttärova, canopy"));
+    location_map.insert(String::from("MC115"), String::from("Kenttärova, crown"));
+    location_map.insert(String::from("MC116"), String::from("Kenttärova, ground"));
+
+    location_map.insert(String::from("MC117"), String::from("Paljakka, landscape"));
+    location_map.insert(String::from("MC118"), String::from("Paljakka, landscape"));
+    location_map.insert(String::from("MC117-1"), String::from("Paljakka, landscape"));
+
+    location_map.insert(String::from("MC119"), String::from("Värriö, canopy"));
+    location_map.insert(String::from("MC120"), String::from("Värriö, crown"));
+    location_map.insert(String::from("MC121"), String::from("Värriö, ground"));
+
+    location_map.insert(String::from("MC122"), String::from("Lammi, crown"));
+    location_map.insert(String::from("MC123"), String::from("Lammi, crown"));
+    location_map.insert(String::from("MC124"), String::from("Lammi, landscape"));
+    location_map.insert(String::from("MC125"), String::from("Lammi, landscape"));
+    location_map.insert(String::from("MC126"), String::from("Lammi, ground"));
+    location_map.insert(String::from("MC127"), String::from("Lammi, ground"));
+
+    location_map.insert(String::from("MC128"), String::from("Kaamanen, ground"));
+
+    location_map.insert(
+        String::from("MC129"),
+        String::from("Lompolojänkkä, ground"),
+    );
+
+    location_map.insert(String::from("MC130"), String::from("Tvärminne, landscape"));
+
+    location_map.insert(String::from("MC131"), String::from("Jokioinen, landscape"));
+
     Ok(location_map)
 }
 
