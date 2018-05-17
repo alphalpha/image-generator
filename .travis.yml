@@ -20,5 +20,5 @@ before_script:
 
 script:
   - cargo fmt --all -- --write-mode=diff
-  - cargo build --verbose
+  - cargo build --release --verbose
   - cargo test --verbose
