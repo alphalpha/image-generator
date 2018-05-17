@@ -82,8 +82,6 @@ impl<'a> Config<'a> {
                 )
         ).clone();
 
-        println!("Location {}", location);
-
         let font: Font = try!(
             args.next()
                 .ok_or(util::Error::Custom(String::from("Cannot parse font path")))
@@ -247,7 +245,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let in_image = try!(image::open(&file));
         let color =
             try!(crop_image(&mut in_image.to_rgb(), &config.roi).and_then(|i| mean_color(&i)));
-        println!("{:?}", color);
+        let color_string = format!("{:?}", color);
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() {
@@ -259,7 +257,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
             .ok_or_else(|| Box::new(util::Error::Custom(String::from("Cannot obtain file name"))))
             .and_then(|n| parse_date(n).map_err(|e| Box::new(e)))?;
 
-        draw_citing(&mut image, &config, &date);
+        draw_citing(&mut image, &config, &date, &color_string);
         try!(
             output_file_path(&config.output_path, &file)
                 .and_then(|path| image.save(path).map_err(|e| util::Error::Io(e)))
@@ -268,7 +266,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
     Ok(())
 }
 
-fn draw_citing(image: &mut RgbImage, config: &Config, date: &String) {
+fn draw_citing(image: &mut RgbImage, config: &Config, date: &String, color: &String) {
     let location_date = config.location.clone() + ", " + date;
     draw_text_mut(
         image,
@@ -290,6 +288,17 @@ fn draw_citing(image: &mut RgbImage, config: &Config, date: &String) {
         &config.font.font,
         color_title,
     );
+
+    draw_text_mut(
+        image,
+        config.font.color,
+        config.font.pos.0,
+        config.font.pos.1 + 2 * config.font.scale.y as u32,
+        config.font.scale,
+        &config.font.font,
+        color,
+    );
+    println!("{}, {}", location_date, color);
 }
 
 #[cfg(test)]
