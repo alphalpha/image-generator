@@ -4,15 +4,15 @@ extern crate rusttype;
 
 mod util;
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::fs;
-use std::error::Error;
-use std::io::Read;
+use image::{GenericImage, Rgb, RgbImage};
 use imageproc::drawing::draw_text_mut;
 use imageproc::rect::Rect;
-use image::{GenericImage, Rgb, RgbImage};
 use rusttype::{FontCollection, Scale};
+use std::collections::HashMap;
+use std::error::Error;
+use std::fs;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 pub struct Font<'a> {
     pub font: rusttype::Font<'a>,

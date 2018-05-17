@@ -1,8 +1,8 @@
 extern crate image_generator;
 
+use image_generator::Config;
 use std::env;
 use std::process;
-use image_generator::Config;
 
 fn help() -> String {
     String::from("usage: \
