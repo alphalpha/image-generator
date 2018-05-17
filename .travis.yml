@@ -14,11 +14,27 @@ rust:
 branches:
   only:
     - master
+    - /v\d+\.\d/
 
 before_script:
   - rustup component add rustfmt-preview
 
 script:
   - cargo fmt --all -- --write-mode=diff
-  - cargo build --release --verbose
   - cargo test --verbose
+  - cargo build --release --verbose
+
+before_deploy:
+  ls -l target/release
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: D8JSEh8nblF3+DMqvhSKfvyeQd279/5rsqaoZYRlVEs5v/sFSSLFyIp+6K1mA/LDYJpYmbhYeuqQwbhBiZO1bXmiCLgVsM4CdfcY4bXMrMCT5uv3K720z4FP9J2CfoV+FzZz2jJkJNCCMPYCDrcgdTPyyJlLaSKNT8VuTa2by+mCbzcx9yWn5y6bPy2mGzfcNFUQD+22uQ+vnpBrpGR/qHAYAD7FqV0UVDQew2oR3hj/Ek5sRamtodI+oQMrzp6hXr0M7OxIO8iB/+DQoOBagtN/awDwzoraG1/Q3zA7yeRQrxsYuttcKudThnnaFvAv9JVUfdLlRvViGdpQDvFdQ/VVapcFax+igv0RHkLt1IeiLi2nQBUEfU0GF5G5nH2KPttVtP5RAucLfiH8AXJcAeZicwlq7rAuoMKcbBBi0ToObTopRXIGKS7ny7sIou3aoCnBNzWG2iz/Ejo1FbKsS1tWKoJa3lgvvRqPx5SZ3M2z3gG55ARYKUklg/dsNcFujx10RZtoYKIWt9aBHaHdaJm8mpWuN8U3IyNz3ZmReNOnYEqPuCezGwezOmIKGrtXtbLBNe4gj4cuiqQh3y8oy9Y22DF5lDQyPbuzQA5QrI96Aztqn6cxJoDCsFWicQh34un/4cBeI5GSv7J1ZCxYmswaWIXWSL7zXNt7/rfB+bo=
+  file: $TRAVIS_BUILD_DIR/target/release/image-generator
+  on:
+    repo: alphalpha/image-generator
+    branch: master
+    condition: $TRAVIS_OS_NAME = osx
+    tags: true
