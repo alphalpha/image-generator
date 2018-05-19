@@ -8,7 +8,7 @@ mod util;
 use image::{GenericImage, Rgb, RgbImage};
 use imageproc::drawing::{draw_filled_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
-use rusttype::{point, FontCollection, PositionedGlyph, Scale};
+use rusttype::{point, FontCollection, Point, PositionedGlyph, Scale};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -248,7 +248,6 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let in_image = try!(image::open(&file));
         let color =
             try!(crop_image(&mut in_image.to_rgb(), &config.roi).and_then(|i| mean_color(&i)));
-        let color_string = format!("{:?}", color);
 
         let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
         for p in image.pixels_mut() {
@@ -260,7 +259,26 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
             .ok_or_else(|| Box::new(util::Error::Custom(String::from("Cannot obtain file name"))))
             .and_then(|n| parse_date(n).map_err(|e| Box::new(e)))?;
 
-        draw_citing(&mut image, &config, &date, &color_string);
+        let mut position = Point {
+            x: config.font.pos.0,
+            y: config.font.pos.1,
+        };
+        let location_date = config.location.clone() + ", " + &date;
+        draw_citing(&mut image, &config, &position, &location_date.as_str());
+
+        position.y = config.font.pos.1 + config.font.scale.y as u32;
+        draw_citing(
+            &mut image,
+            &config,
+            &position,
+            "Average colour of forest activity",
+        );
+
+        position.y = config.font.pos.1 + 2 * config.font.scale.y as u32;
+        let color_string = format!("{:?}", color);
+        draw_citing(&mut image, &config, &position, &color_string.as_str());
+
+        println!("{}, {}", location_date, color_string);
         try!(
             output_file_path(&config.output_path, &file)
                 .and_then(|path| image.save(path).map_err(|e| util::Error::Io(e)))
@@ -269,7 +287,7 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
     Ok(())
 }
 
-pub fn text_width<'a>(scale: Scale, font: &'a rusttype::Font<'a>, text: &'a str) -> u32 {
+pub fn text_width(scale: Scale, font: &rusttype::Font, text: &str) -> u32 {
     let v_metrics = font.v_metrics(scale);
     let offset = point(0.0, v_metrics.ascent);
     let glyphs: Vec<PositionedGlyph> = font.layout(text, scale, offset).collect();
@@ -281,62 +299,23 @@ pub fn text_width<'a>(scale: Scale, font: &'a rusttype::Font<'a>, text: &'a str)
     w
 }
 
-fn draw_citing(image: &mut RgbImage, config: &Config, date: &String, color: &String) {
-    let x = config.font.pos.0 as i32;
+fn draw_citing(image: &mut RgbImage, config: &Config, position: &Point<u32>, text: &str) {
     let height = config.font.scale.y as u32;
-    let y = config.font.pos.1 as i32;
-    let location_date = config.location.clone() + ", " + date;
-    let width = text_width(config.font.scale, &config.font.font, location_date.as_str());
+    let width = text_width(config.font.scale, &config.font.font, text);
     draw_filled_rect_mut(
         image,
-        Rect::at(x, y).of_size(width, height),
+        Rect::at(position.x as i32, position.y as i32).of_size(width, height),
         config.font.background_color,
     );
     draw_text_mut(
         image,
         config.font.color,
-        config.font.pos.0,
-        config.font.pos.1,
+        position.x,
+        position.y,
         config.font.scale,
         &config.font.font,
-        location_date.as_str(),
+        text,
     );
-
-    let y = config.font.pos.1 as i32 + config.font.scale.y as i32;
-    let color_title = "Average colour of forest activity";
-    let width = text_width(config.font.scale, &config.font.font, color_title);
-    draw_filled_rect_mut(
-        image,
-        Rect::at(x, y).of_size(width, height),
-        config.font.background_color,
-    );
-    draw_text_mut(
-        image,
-        config.font.color,
-        config.font.pos.0,
-        y as u32,
-        config.font.scale,
-        &config.font.font,
-        color_title,
-    );
-
-    let y = config.font.pos.1 as i32 + 2 * config.font.scale.y as i32;
-    let width = text_width(config.font.scale, &config.font.font, color.as_str());
-    draw_filled_rect_mut(
-        image,
-        Rect::at(x, y).of_size(width, height),
-        config.font.background_color,
-    );
-    draw_text_mut(
-        image,
-        config.font.color,
-        config.font.pos.0,
-        y as u32,
-        config.font.scale,
-        &config.font.font,
-        color,
-    );
-    println!("{}, {}", location_date, color);
 }
 
 #[cfg(test)]
