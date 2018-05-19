@@ -1,3 +1,4 @@
+extern crate conv;
 extern crate image;
 extern crate imageproc;
 extern crate rusttype;
@@ -5,9 +6,9 @@ extern crate rusttype;
 mod util;
 
 use image::{GenericImage, Rgb, RgbImage};
-use imageproc::drawing::draw_text_mut;
+use imageproc::drawing::{draw_filled_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
-use rusttype::{FontCollection, Scale};
+use rusttype::{point, FontCollection, PositionedGlyph, Scale};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -19,6 +20,7 @@ pub struct Font<'a> {
     pub scale: Scale,
     pub color: Rgb<u8>,
     pub pos: (u32, u32),
+    pub background_color: Rgb<u8>,
 }
 
 impl<'a> Font<'a> {
@@ -29,9 +31,10 @@ impl<'a> Font<'a> {
         if let Some(font) = FontCollection::from_bytes(buffer.to_vec()).into_font() {
             Ok(Font {
                 font: font,
-                scale: Scale { x: 22.4, y: 22.4 },
+                scale: Scale::uniform(22.4),
                 color: Rgb([255, 255, 255]),
                 pos: (10, 10),
+                background_color: Rgb([87u8, 92u8, 127u8]),
             })
         } else {
             Err(util::Error::Custom(String::from(
@@ -266,8 +269,29 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
     Ok(())
 }
 
+pub fn text_width<'a>(scale: Scale, font: &'a rusttype::Font<'a>, text: &'a str) -> u32 {
+    let v_metrics = font.v_metrics(scale);
+    let offset = point(0.0, v_metrics.ascent);
+    let glyphs: Vec<PositionedGlyph> = font.layout(text, scale, offset).collect();
+    let last_glyph = glyphs.last().unwrap().clone();
+    let mut w = last_glyph.position().x as u32;
+    if let Some(bb) = last_glyph.pixel_bounding_box() {
+        w = w + bb.width() as u32;
+    }
+    w
+}
+
 fn draw_citing(image: &mut RgbImage, config: &Config, date: &String, color: &String) {
+    let x = config.font.pos.0 as i32;
+    let height = config.font.scale.y as u32;
+    let y = config.font.pos.1 as i32;
     let location_date = config.location.clone() + ", " + date;
+    let width = text_width(config.font.scale, &config.font.font, location_date.as_str());
+    draw_filled_rect_mut(
+        image,
+        Rect::at(x, y).of_size(width, height),
+        config.font.background_color,
+    );
     draw_text_mut(
         image,
         config.font.color,
@@ -278,22 +302,36 @@ fn draw_citing(image: &mut RgbImage, config: &Config, date: &String, color: &Str
         location_date.as_str(),
     );
 
+    let y = config.font.pos.1 as i32 + config.font.scale.y as i32;
     let color_title = "Average colour of forest activity";
+    let width = text_width(config.font.scale, &config.font.font, color_title);
+    draw_filled_rect_mut(
+        image,
+        Rect::at(x, y).of_size(width, height),
+        config.font.background_color,
+    );
     draw_text_mut(
         image,
         config.font.color,
         config.font.pos.0,
-        config.font.pos.1 + config.font.scale.y as u32,
+        y as u32,
         config.font.scale,
         &config.font.font,
         color_title,
     );
 
+    let y = config.font.pos.1 as i32 + 2 * config.font.scale.y as i32;
+    let width = text_width(config.font.scale, &config.font.font, color.as_str());
+    draw_filled_rect_mut(
+        image,
+        Rect::at(x, y).of_size(width, height),
+        config.font.background_color,
+    );
     draw_text_mut(
         image,
         config.font.color,
         config.font.pos.0,
-        config.font.pos.1 + 2 * config.font.scale.y as u32,
+        y as u32,
         config.font.scale,
         &config.font.font,
         color,

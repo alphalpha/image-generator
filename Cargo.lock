@@ -181,6 +181,7 @@ dependencies = [
 name = "image-generator"
 version = "0.1.0"
 dependencies = [
+ "conv 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imageproc 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusttype 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
