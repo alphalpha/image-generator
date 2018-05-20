@@ -249,21 +249,17 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let color =
             try!(crop_image(&mut in_image.to_rgb(), &config.roi).and_then(|i| mean_color(&i)));
 
-        let mut image = RgbImage::new(2 * in_image.dimensions().0, in_image.dimensions().1);
+        let dimensions = in_image.dimensions();
+        let mut image = RgbImage::new(2 * dimensions.0, dimensions.1);
         for p in image
-            .sub_image(0, 0, in_image.dimensions().0, in_image.dimensions().1)
+            .sub_image(0, 0, dimensions.0, dimensions.1)
             .pixels_mut()
         {
             *p.2 = color;
         }
 
         for p in image
-            .sub_image(
-                in_image.dimensions().0,
-                0,
-                in_image.dimensions().0,
-                in_image.dimensions().1,
-            )
+            .sub_image(dimensions.0, 0, dimensions.0, dimensions.1)
             .pixels_mut()
         {
             *p.2 = in_image.get_pixel(p.0, p.1).to_rgb();
@@ -281,15 +277,12 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let location_date = config.location.clone() + ", " + &date;
         draw_citing(&mut image, &config, &position, &location_date.as_str());
 
-        position.y = config.font.pos.1 + config.font.scale.y as u32;
-        draw_citing(
-            &mut image,
-            &config,
-            &position,
-            "Average colour of forest activity",
-        );
+        let font_height = config.font.scale.y as u32;
+        position.y = config.font.pos.1 + font_height;
+        let title = "Average colour of forest activity";
+        draw_citing(&mut image, &config, &position, title);
 
-        position.y = config.font.pos.1 + 2 * config.font.scale.y as u32;
+        position.y = config.font.pos.1 + 2 * font_height;
         let color_string = format!("{:?}", color);
         draw_citing(&mut image, &config, &position, &color_string.as_str());
 
