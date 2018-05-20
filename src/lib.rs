@@ -5,7 +5,7 @@ extern crate rusttype;
 
 mod util;
 
-use image::{GenericImage, Rgb, RgbImage};
+use image::{GenericImage, Pixel, Rgb, RgbImage};
 use imageproc::drawing::{draw_filled_rect_mut, draw_text_mut};
 use imageproc::rect::Rect;
 use rusttype::{point, FontCollection, Point, PositionedGlyph, Scale};
@@ -249,9 +249,24 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
         let color =
             try!(crop_image(&mut in_image.to_rgb(), &config.roi).and_then(|i| mean_color(&i)));
 
-        let mut image = RgbImage::new(in_image.dimensions().0, in_image.dimensions().1);
-        for p in image.pixels_mut() {
-            *p = color;
+        let mut image = RgbImage::new(2 * in_image.dimensions().0, in_image.dimensions().1);
+        for p in image
+            .sub_image(0, 0, in_image.dimensions().0, in_image.dimensions().1)
+            .pixels_mut()
+        {
+            *p.2 = color;
+        }
+
+        for p in image
+            .sub_image(
+                in_image.dimensions().0,
+                0,
+                in_image.dimensions().0,
+                in_image.dimensions().1,
+            )
+            .pixels_mut()
+        {
+            *p.2 = in_image.get_pixel(p.0, p.1).to_rgb();
         }
 
         let date = file.file_stem()
