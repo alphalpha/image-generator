@@ -6,7 +6,7 @@ use std::process;
 
 fn help() -> String {
     String::from("usage: \
-    image-generator [<images_path>] [<Camera_ID>] [<font_path] [<x-coordinate> <y-coordinate> <width> <height>] [text_before_date_and_time]\n\
+    image-generator [<images_path>] [<Camera_ID>] [<font_path] [<x-coordinate> <y-coordinate> <width> <height>]\n\
     example: image-generator src/test_data MC105 src/DejaVuSans.ttf 100 100 100 100")
 }
 
