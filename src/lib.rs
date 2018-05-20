@@ -302,35 +302,38 @@ pub fn run(config: Config) -> Result<(), Box<Error>> {
     Ok(())
 }
 
-pub fn text_width(scale: Scale, font: &rusttype::Font, text: &str) -> u32 {
+pub fn text_width(scale: Scale, font: &rusttype::Font, text: &str) -> Option<u32> {
     let v_metrics = font.v_metrics(scale);
     let offset = point(0.0, v_metrics.ascent);
     let glyphs: Vec<PositionedGlyph> = font.layout(text, scale, offset).collect();
-    let last_glyph = glyphs.last().unwrap().clone();
-    let mut w = last_glyph.position().x as u32;
-    if let Some(bb) = last_glyph.pixel_bounding_box() {
-        w = w + bb.width() as u32;
+    if let Some(last_glyph) = glyphs.last() {
+        let mut w = last_glyph.position().x as u32;
+        if let Some(bb) = last_glyph.pixel_bounding_box() {
+            w = w + bb.width() as u32;
+        }
+        return Some(w);
     }
-    w
+    None
 }
 
 fn draw_citing(image: &mut RgbImage, config: &Config, position: &Point<u32>, text: &str) {
-    let height = config.font.scale.y as u32;
-    let width = text_width(config.font.scale, &config.font.font, text);
-    draw_filled_rect_mut(
-        image,
-        Rect::at(position.x as i32, position.y as i32).of_size(width, height),
-        config.font.background_color,
-    );
-    draw_text_mut(
-        image,
-        config.font.color,
-        position.x,
-        position.y,
-        config.font.scale,
-        &config.font.font,
-        text,
-    );
+    if let Some(width) = text_width(config.font.scale, &config.font.font, text) {
+        let height = config.font.scale.y as u32;
+        draw_filled_rect_mut(
+            image,
+            Rect::at(position.x as i32, position.y as i32).of_size(width, height),
+            config.font.background_color,
+        );
+        draw_text_mut(
+            image,
+            config.font.color,
+            position.x,
+            position.y,
+            config.font.scale,
+            &config.font.font,
+            text,
+        );
+    }
 }
 
 #[cfg(test)]
