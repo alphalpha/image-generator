@@ -33,7 +33,7 @@ impl<'a> Font<'a> {
                 font: font,
                 scale: Scale::uniform(22.4),
                 color: Rgb([255, 255, 255]),
-                pos: (10, 10),
+                pos: (0, 0),
                 background_color: Rgb([87u8, 92u8, 127u8]),
             })
         } else {
