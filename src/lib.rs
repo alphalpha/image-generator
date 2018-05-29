@@ -24,7 +24,7 @@ pub struct Font<'a> {
 }
 
 impl<'a> Font<'a> {
-    fn new(path: &Path, size: f32) -> Result<Font<'a>, util::Error> {
+    fn new(path: &Path, size: f32, background_color: Rgb<u8>) -> Result<Font<'a>, util::Error> {
         let mut file = fs::File::open(path)?;
         let mut buffer: Vec<u8> = Vec::new();
         file.read_to_end(&mut buffer)?;
@@ -34,7 +34,7 @@ impl<'a> Font<'a> {
                 scale: Scale::uniform(size),
                 color: Rgb([255, 255, 255]),
                 pos: (0, 0),
-                background_color: Rgb([32u8, 35u8, 68u8]),
+                background_color: background_color,
             })
         } else {
             Err(util::Error::Custom(String::from(
@@ -95,7 +95,31 @@ impl<'a> Config<'a> {
                 .ok_or(util::Error::Custom(String::from("Cannot parse font size")))?
                 .parse()
         );
-        let font = try!(Font::new(Path::new(&font_path), font_size));
+        let r: u8 = try!(
+            args.next()
+                .ok_or(util::Error::Custom(String::from(
+                    "Cannot parse font background color Red value"
+                )))?
+                .parse()
+        );
+
+        let g: u8 = try!(
+            args.next()
+                .ok_or(util::Error::Custom(String::from(
+                    "Cannot parse font background color Green value"
+                )))?
+                .parse()
+        );
+
+        let b: u8 = try!(
+            args.next()
+                .ok_or(util::Error::Custom(String::from(
+                    "Cannot parse font background color Blue value"
+                )))?
+                .parse()
+        );
+        let color = Rgb([r, g, b]);
+        let font = try!(Font::new(Path::new(&font_path), font_size, color));
 
         let rect: Vec<i32> = args.filter_map(|n| n.parse().ok()).collect();
         if rect.len() != 4 {

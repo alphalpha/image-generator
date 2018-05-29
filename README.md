@@ -4,6 +4,6 @@ It calculates the mean green value for a given area of each image in a given fol
 Green image on the left, original image on the right. Adds annotation to the green image based on the `[<Camera_ID>]` found in this [Datasheet](https://zenodo.org/record/1066862) and the file name.  
   
 usage:  
-```image-generator [<images_path>] [<Camera_ID>] [<font_path>] [<font_size>] [<x-coord> <y-coord> <width> <height>]```  
+```image-generator [<images_path>] [<Camera_ID>] [<font_path>] [<font_size>] [<red_value> <green_value> <blue_value>] [<x-coord> <y-coord> <width> <height>]```  
 example:  
-```image-generator src/test_data MC105 src/DejaVuSans.ttf 16 100 100 100 100```
+```image-generator src/test_data MC105 src/DejaVuSans.ttf 14 32 35 68 100 100 100 100```
