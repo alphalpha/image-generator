@@ -24,17 +24,17 @@ pub struct Font<'a> {
 }
 
 impl<'a> Font<'a> {
-    fn new(path: &Path) -> Result<Font<'a>, util::Error> {
+    fn new(path: &Path, size: f32) -> Result<Font<'a>, util::Error> {
         let mut file = fs::File::open(path)?;
         let mut buffer: Vec<u8> = Vec::new();
         file.read_to_end(&mut buffer)?;
         if let Some(font) = FontCollection::from_bytes(buffer.to_vec()).into_font() {
             Ok(Font {
                 font: font,
-                scale: Scale::uniform(22.4),
+                scale: Scale::uniform(size),
                 color: Rgb([255, 255, 255]),
                 pos: (0, 0),
-                background_color: Rgb([87u8, 92u8, 127u8]),
+                background_color: Rgb([32u8, 35u8, 68u8]),
             })
         } else {
             Err(util::Error::Custom(String::from(
@@ -85,11 +85,17 @@ impl<'a> Config<'a> {
                 )
         ).clone();
 
-        let font: Font = try!(
+        let font_path = try!(
             args.next()
                 .ok_or(util::Error::Custom(String::from("Cannot parse font path")))
-                .and_then(|p| Font::new(Path::new(&p)))
         );
+
+        let font_size: f32 = try!(
+            args.next()
+                .ok_or(util::Error::Custom(String::from("Cannot parse font size")))?
+                .parse()
+        );
+        let font = try!(Font::new(Path::new(&font_path), font_size));
 
         let rect: Vec<i32> = args.filter_map(|n| n.parse().ok()).collect();
         if rect.len() != 4 {
